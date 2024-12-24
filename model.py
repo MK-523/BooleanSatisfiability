@@ -38,3 +38,20 @@ class SATSolverRL(nn.Module):
         #mask positive and negative literals
         positive_mask = clauses > 0
         negative_mask = clauses < 0
+
+        sampled_variables_bool = sampled_variables.bool()
+
+        #compute if each clause is satisfied
+        clause_satisfaction = (
+            (sampled_variables_bool.gather(1, torch.abs(clauses) - 1) & positive_mask) |
+            (~sampled_variables_bool.gather(1, torch.abs(clauses) - 1) & negative_mask)
+        ).any(dim=1)
+
+        return clause_satisfaction.float().mean() #average SAT reward across batch
+
+    def loss(self, clauses, sampled_variables, log_probs):
+        #compute SAT reward
+        sat_reward = self.evaluate_satisfiability(clauses, sampled_variables)
+        #policy gradient loss: negative reward times log probability
+        policy_loss = -sat_reward * log_probs.sum()
+        return policy_loss, sat_reward
