@@ -38,3 +38,43 @@ python -m satrl solve examples/pigeonhole_3_2.cnf --json
 
 A human-readable SAT result contains a verified DIMACS-style assignment:
 
+```text
+s SAT
+v 1 -2 3 4 0
+c verified=true ...
+```
+
+Generate a reproducible instance:
+
+```bash
+satrl generate \
+  --variables 10 \
+  --clauses 40 \
+  --clause-size 3 \
+  --seed 523 \
+  --output instance.cnf
+```
+
+Use `--planted` when a known satisfying witness is useful during development.
+The witness is not written into the DIMACS output.
+
+## CLI
+
+```text
+satrl solve INPUT [--json] [--max-nodes N] [--no-preprocess]
+satrl generate --variables N --clauses M --clause-size K --seed S
+satrl benchmark [--variables N] [--clauses M] [--instances R] [--output report.json]
+```
+
+`INPUT` may be `-` to read DIMACS from standard input. A bounded search exits
+with status code `3` if it reaches the node limit and prints `s UNKNOWN`.
+Malformed input and invalid arguments exit with status code `2`.
+
+## Python API
+
+```python
+from satrl import CNFFormula, SolveStatus, solve
+
+formula = CNFFormula.from_clauses(
+    [[1, 2], [-1, 3], [-2, 3]],
+    num_variables=3,
