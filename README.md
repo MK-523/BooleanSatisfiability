@@ -78,3 +78,43 @@ from satrl import CNFFormula, SolveStatus, solve
 formula = CNFFormula.from_clauses(
     [[1, 2], [-1, 3], [-2, 3]],
     num_variables=3,
+)
+result = solve(formula)
+
+assert result.status is SolveStatus.SAT
+assert result.verified
+print(result.assignment)
+```
+
+## Reproducible validation
+
+Run the maintained package tests:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+The randomized property suite generates many small formulas and requires DPLL
+to agree with exhaustive enumeration. It separately checks that preprocessing
+preserves satisfiability and that planted generators retain their witnesses.
+
+Run a benchmark without overwriting a checked-in claim:
+
+```bash
+mkdir -p benchmark-output
+satrl benchmark \
+  --variables 10 \
+  --clauses 40 \
+  --clause-size 3 \
+  --instances 20 \
+  --seed 523 \
+  --output benchmark-output/dpll-10v-40c.json
+```
+
+See [results methodology](docs/results-methodology.md) before interpreting
+runtime numbers. This repository does not claim that this educational DPLL
+implementation is competitive with production CDCL solvers.
+
+## Repository map
+
+| Path | Purpose |
