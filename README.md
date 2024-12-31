@@ -118,3 +118,43 @@ implementation is competitive with production CDCL solvers.
 ## Repository map
 
 | Path | Purpose |
+|---|---|
+| [`satrl/formula.py`](satrl/formula.py) | Immutable CNF model, preprocessing, and evaluation |
+| [`satrl/dimacs.py`](satrl/dimacs.py) | Validated DIMACS input/output |
+| [`satrl/solver.py`](satrl/solver.py) | Exact DPLL solver and search statistics |
+| [`satrl/generator.py`](satrl/generator.py) | Seeded random and planted k-CNF generation |
+| [`satrl/baselines.py`](satrl/baselines.py) | Small-instance exhaustive oracle |
+| [`satrl/benchmarking.py`](satrl/benchmarking.py) | Per-instance benchmark records and reports |
+| [`satrl/cli.py`](satrl/cli.py) | `solve`, `generate`, and `benchmark` commands |
+| [`tests`](tests) | Unit, CLI, and randomized correctness tests |
+| [`examples`](examples) | Small documented DIMACS instances |
+| [`docs/architecture.md`](docs/architecture.md) | Data flow and solver design |
+| Root prototype files | Byte-for-byte historical paths retained for compatibility |
+| [`legacy/original`](legacy/original) | Unmodified historical PyTorch prototype |
+| [`benchmark`](benchmark) | Preserved audit of the historical policy |
+
+## Historical policy audit
+
+The historical benchmark remains intentionally separate from the exact solver.
+It reproduces two blocking issues in the old prototype: CNF preprocessing could
+flatten formulas, and the policy used a constant input rather than the formula.
+Its formula-agnostic policy showed no reliable held-out advantage over uniform
+random search under the recorded protocol.
+
+Those negative results are evidence about the preserved prototype only. They
+are not presented as a comparison between DPLL and a learned solver.
+
+## Scope and limitations
+
+- DPLL is exact but has exponential worst-case complexity.
+- The implementation is designed for clarity, reproducibility, and small to
+  medium experiments; it does not implement clause learning, watched literals,
+  restarts, or industrial preprocessing.
+- Exhaustive enumeration is restricted to small formulas and is used only as a
+  correctness oracle.
+- Generated random k-CNF instances do not represent industrial SAT workloads.
+- No formula-conditioned learned model is included. The requirements for one
+  are described in the [architecture document](docs/architecture.md).
+
+## License
+
