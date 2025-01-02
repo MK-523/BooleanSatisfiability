@@ -158,3 +158,4 @@ are not presented as a comparison between DPLL and a learned solver.
 
 ## License
 
+MIT. See [`LICENSE`](LICENSE).
