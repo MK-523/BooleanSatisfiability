@@ -38,3 +38,43 @@ def main() -> None:
         key = tuple(row[field] for field in KEY_FIELDS)
         methods[method][key] = row
 
+    policy = methods["formula_agnostic_policy_gradient"]
+    random = methods["uniform_random"]
+    if policy.keys() != random.keys():
+        raise ValueError("policy and random run keys do not match")
+
+    differences: dict[tuple[str, str, str], list[float]] = defaultdict(list)
+    for key in sorted(policy):
+        config, _, _, budget = key
+        for metric in METRICS:
+            differences[(config, budget, metric)].append(
+                float(policy[key][metric]) - float(random[key][metric])
+            )
+
+    output_rows = []
+    for (config, budget, metric), values in sorted(differences.items()):
+        array = np.asarray(values, dtype=float)
+        mean = float(array.mean())
+        std = float(array.std(ddof=1))
+        critical = float(t.ppf(0.975, len(array) - 1))
+        half_width = critical * std / math.sqrt(len(array))
+        output_rows.append(
+            {
+                "config": config,
+                "candidate_budget": budget,
+                "metric": metric,
+                "paired_runs": len(array),
+                "mean_policy_minus_random": mean,
+                "sample_std": std,
+                "ci95_low": mean - half_width,
+                "ci95_high": mean + half_width,
+            }
+        )
+
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    with args.output.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(output_rows[0]))
+        writer.writeheader()
+        writer.writerows(output_rows)
+    print(f"Wrote {len(output_rows)} paired comparisons to {args.output}")
+
