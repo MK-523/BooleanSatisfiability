@@ -78,3 +78,6 @@ def main() -> None:
         writer.writerows(output_rows)
     print(f"Wrote {len(output_rows)} paired comparisons to {args.output}")
 
+
+if __name__ == "__main__":
+    main()
