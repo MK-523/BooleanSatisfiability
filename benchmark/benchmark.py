@@ -38,3 +38,43 @@ class Config:
         return f"n{self.num_variables}_m{self.num_clauses}_k{self.clause_size}"
 
 
+@dataclass
+class Result:
+    config: str
+    num_variables: int
+    num_clauses: int
+    clause_size: int
+    train_formulas: int
+    test_formulas: int
+    data_seed: int
+    run_seed: int | str
+    method: str
+    candidate_budget: int | str
+    mean_satisfaction_ratio: float
+    solved_rate: float
+    optimal_rate: float
+    mean_regret_to_exact: float
+    runtime_ms_total: float
+    runtime_ms_per_formula: float
+    training_ms: float
+    policy_prob_min: float | str = ""
+    policy_prob_mean: float | str = ""
+    policy_prob_max: float | str = ""
+
+
+def formula_fingerprint(formula: np.ndarray) -> str:
+    """Stable identity used to prove that the split has no overlap."""
+    return hashlib.sha256(formula.astype(np.int16).tobytes()).hexdigest()
+
+
+def generate_formula(
+    rng: np.random.Generator,
+    num_variables: int,
+    num_clauses: int,
+    clause_size: int,
+) -> np.ndarray:
+    """Generate a standard random k-CNF with distinct variables per clause.
+
+    Variables are sampled without replacement inside a clause, so tautologies
+    and repeated literals cannot occur.  Canonicalized clauses are deduplicated.
+    This avoids relying on the upstream preprocessing bug.
