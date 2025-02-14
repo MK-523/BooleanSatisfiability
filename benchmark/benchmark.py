@@ -78,3 +78,43 @@ def generate_formula(
     Variables are sampled without replacement inside a clause, so tautologies
     and repeated literals cannot occur.  Canonicalized clauses are deduplicated.
     This avoids relying on the upstream preprocessing bug.
+    """
+    if clause_size > num_variables:
+        raise ValueError("clause_size cannot exceed num_variables")
+
+    clauses: set[tuple[int, ...]] = set()
+    while len(clauses) < num_clauses:
+        variables = rng.choice(
+            np.arange(1, num_variables + 1), size=clause_size, replace=False
+        )
+        signs = rng.choice(np.array([-1, 1], dtype=np.int8), size=clause_size)
+        literals = variables * signs
+        canonical = tuple(int(v) for v in literals[np.argsort(np.abs(literals))])
+        clauses.add(canonical)
+    return np.asarray(sorted(clauses), dtype=np.int16)
+
+
+def generate_split(config: Config, seed: int) -> tuple[list[np.ndarray], list[np.ndarray]]:
+    rng = np.random.default_rng(seed)
+    formulas: list[np.ndarray] = []
+    seen: set[str] = set()
+    total = config.train_formulas + config.test_formulas
+    while len(formulas) < total:
+        formula = generate_formula(
+            rng, config.num_variables, config.num_clauses, config.clause_size
+        )
+        identity = formula_fingerprint(formula)
+        if identity not in seen:
+            formulas.append(formula)
+            seen.add(identity)
+    return formulas[: config.train_formulas], formulas[config.train_formulas :]
+
+
+def satisfaction_ratios(formula: np.ndarray, assignments: np.ndarray) -> np.ndarray:
+    """Return the fraction of satisfied clauses for each Boolean assignment."""
+    assignments = np.asarray(assignments, dtype=bool)
+    if assignments.ndim == 1:
+        assignments = assignments[None, :]
+    variable_values = assignments[:, np.abs(formula) - 1]
+    literal_values = np.where(formula[None, :, :] > 0, variable_values, ~variable_values)
+    return literal_values.any(axis=2).mean(axis=1)
