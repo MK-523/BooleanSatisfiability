@@ -118,3 +118,43 @@ def satisfaction_ratios(formula: np.ndarray, assignments: np.ndarray) -> np.ndar
     variable_values = assignments[:, np.abs(formula) - 1]
     literal_values = np.where(formula[None, :, :] > 0, variable_values, ~variable_values)
     return literal_values.any(axis=2).mean(axis=1)
+
+
+def exact_optimum(formula: np.ndarray, num_variables: int) -> tuple[float, bool]:
+    """Enumerate every assignment; suitable here because n <= 12."""
+    ids = np.arange(1 << num_variables, dtype=np.uint32)
+    assignments = ((ids[:, None] >> np.arange(num_variables)) & 1).astype(bool)
+    ratios = satisfaction_ratios(formula, assignments)
+    best = float(ratios.max())
+    return best, math.isclose(best, 1.0, abs_tol=1e-12)
+
+
+class FormulaAgnosticPolicyGradient:
+    """Behavior-level reconstruction of the upstream formula-agnostic policy.
+
+    Upstream's MLP receives ``torch.ones(num_variables)`` for every formula, so
+    it can only learn one global Bernoulli probability per variable.  Direct
+    logits represent the same policy family without claiming bit-for-bit parity
+    with PyTorch's MLP parameterization or initialization.
+    """
+
+    def __init__(self, num_variables: int, seed: int, learning_rate: float = 0.001):
+        self.num_variables = num_variables
+        self.learning_rate = learning_rate
+        self.rng = np.random.default_rng(seed)
+        self.logits = np.zeros(num_variables, dtype=np.float64)
+
+    @property
+    def probabilities(self) -> np.ndarray:
+        clipped = np.clip(self.logits, -30.0, 30.0)
+        return 1.0 / (1.0 + np.exp(-clipped))
+
+    def sample(self, count: int = 1) -> np.ndarray:
+        return self.rng.random((count, self.num_variables)) < self.probabilities
+
+    def train(self, formulas: Sequence[np.ndarray], update_budget: int) -> None:
+        """Apply the upstream uncentered REINFORCE update.
+
+        The reward is the satisfied-clause fraction.  As in the public code,
+        there is no baseline, entropy term, minibatching, or formula input.
+        """
