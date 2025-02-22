@@ -158,3 +158,43 @@ class FormulaAgnosticPolicyGradient:
         The reward is the satisfied-clause fraction.  As in the public code,
         there is no baseline, entropy term, minibatching, or formula input.
         """
+        order = np.arange(len(formulas))
+        position = len(formulas)
+        for _ in range(update_budget):
+            if position == len(formulas):
+                self.rng.shuffle(order)
+                position = 0
+            formula = formulas[int(order[position])]
+            position += 1
+            assignment = self.sample(1)[0]
+            reward = float(satisfaction_ratios(formula, assignment)[0])
+            # For Bernoulli logits, grad(log pi(a)) = a - p.  Gradient descent
+            # on -reward * log pi is therefore this ascent update.
+            self.logits += self.learning_rate * reward * (
+                assignment.astype(np.float64) - self.probabilities
+            )
+
+
+def evaluate_sampler(
+    formulas: Sequence[np.ndarray],
+    sampler,
+    candidate_budget: int,
+    exact_scores: Sequence[float],
+) -> tuple[float, float, float, float, float]:
+    start = time.perf_counter()
+    scores = []
+    solved = []
+    optimal = []
+    regrets = []
+    for formula, exact_score in zip(formulas, exact_scores):
+        assignments = sampler(candidate_budget)
+        score = float(satisfaction_ratios(formula, assignments).max())
+        scores.append(score)
+        solved.append(math.isclose(score, 1.0, abs_tol=1e-12))
+        optimal.append(math.isclose(score, exact_score, abs_tol=1e-12))
+        regrets.append(exact_score - score)
+    elapsed_ms = (time.perf_counter() - start) * 1_000.0
+    return (
+        float(np.mean(scores)),
+        float(np.mean(solved)),
+        float(np.mean(optimal)),
