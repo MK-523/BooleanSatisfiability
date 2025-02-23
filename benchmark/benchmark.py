@@ -238,3 +238,43 @@ def run_benchmark(
         exact_solved = float(np.mean(np.isclose(exact_scores, 1.0)))
         results.append(
             Result(
+                config=config.name,
+                num_variables=config.num_variables,
+                num_clauses=config.num_clauses,
+                clause_size=config.clause_size,
+                train_formulas=config.train_formulas,
+                test_formulas=config.test_formulas,
+                data_seed=effective_data_seed,
+                run_seed="deterministic",
+                method="exact_enumeration",
+                candidate_budget=1 << config.num_variables,
+                mean_satisfaction_ratio=float(np.mean(exact_scores)),
+                solved_rate=exact_solved,
+                optimal_rate=1.0,
+                mean_regret_to_exact=0.0,
+                runtime_ms_total=exact_ms,
+                runtime_ms_per_formula=exact_ms / len(test),
+                training_ms=0.0,
+            )
+        )
+
+        for run_seed in run_seeds:
+            policy = FormulaAgnosticPolicyGradient(config.num_variables, run_seed)
+            train_start = time.perf_counter()
+            policy.train(train, update_budget)
+            training_ms = (time.perf_counter() - train_start) * 1_000.0
+
+            for budget in budgets:
+                random_rng = np.random.default_rng(run_seed + 1_000_003 * budget)
+
+                def random_sampler(count: int, *, rng=random_rng, n=config.num_variables):
+                    return rng.random((count, n)) < 0.5
+
+                metrics = evaluate_sampler(test, random_sampler, budget, exact_scores)
+                results.append(
+                    Result(
+                        config=config.name,
+                        num_variables=config.num_variables,
+                        num_clauses=config.num_clauses,
+                        clause_size=config.clause_size,
+                        train_formulas=config.train_formulas,
