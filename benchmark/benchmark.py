@@ -198,3 +198,43 @@ def evaluate_sampler(
         float(np.mean(scores)),
         float(np.mean(solved)),
         float(np.mean(optimal)),
+        float(np.mean(regrets)),
+        elapsed_ms,
+    )
+
+
+def run_benchmark(
+    configs: Sequence[Config],
+    data_seeds: Sequence[int],
+    run_seeds: Sequence[int],
+    budgets: Sequence[int],
+    update_budget: int,
+) -> tuple[list[Result], dict]:
+    results: list[Result] = []
+    split_manifest: dict[str, dict] = {}
+
+    for base_data_seed in data_seeds:
+      for config in configs:
+        effective_data_seed = base_data_seed + config.num_variables
+        train, test = generate_split(config, effective_data_seed)
+        train_ids = {formula_fingerprint(f) for f in train}
+        test_ids = {formula_fingerprint(f) for f in test}
+        if train_ids & test_ids:
+            raise AssertionError("train/test overlap detected")
+
+        split_manifest[f"{config.name}_seed{effective_data_seed}"] = {
+            **asdict(config),
+            "data_seed": effective_data_seed,
+            "train_fingerprints": sorted(train_ids),
+            "test_fingerprints": sorted(test_ids),
+        }
+
+        exact_start = time.perf_counter()
+        exact_scores = []
+        for formula in test:
+            score, _ = exact_optimum(formula, config.num_variables)
+            exact_scores.append(score)
+        exact_ms = (time.perf_counter() - exact_start) * 1_000.0
+        exact_solved = float(np.mean(np.isclose(exact_scores, 1.0)))
+        results.append(
+            Result(
