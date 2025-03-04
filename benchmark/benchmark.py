@@ -278,3 +278,43 @@ def run_benchmark(
                         num_clauses=config.num_clauses,
                         clause_size=config.clause_size,
                         train_formulas=config.train_formulas,
+                        test_formulas=config.test_formulas,
+                        data_seed=effective_data_seed,
+                        run_seed=run_seed,
+                        method="uniform_random",
+                        candidate_budget=budget,
+                        mean_satisfaction_ratio=metrics[0],
+                        solved_rate=metrics[1],
+                        optimal_rate=metrics[2],
+                        mean_regret_to_exact=metrics[3],
+                        runtime_ms_total=metrics[4],
+                        runtime_ms_per_formula=metrics[4] / len(test),
+                        training_ms=0.0,
+                    )
+                )
+
+                metrics = evaluate_sampler(test, policy.sample, budget, exact_scores)
+                probabilities = policy.probabilities
+                results.append(
+                    Result(
+                        config=config.name,
+                        num_variables=config.num_variables,
+                        num_clauses=config.num_clauses,
+                        clause_size=config.clause_size,
+                        train_formulas=config.train_formulas,
+                        test_formulas=config.test_formulas,
+                        data_seed=effective_data_seed,
+                        run_seed=run_seed,
+                        method="formula_agnostic_policy_gradient",
+                        candidate_budget=budget,
+                        mean_satisfaction_ratio=metrics[0],
+                        solved_rate=metrics[1],
+                        optimal_rate=metrics[2],
+                        mean_regret_to_exact=metrics[3],
+                        runtime_ms_total=metrics[4],
+                        runtime_ms_per_formula=metrics[4] / len(test),
+                        training_ms=training_ms,
+                        policy_prob_min=float(probabilities.min()),
+                        policy_prob_mean=float(probabilities.mean()),
+                        policy_prob_max=float(probabilities.max()),
+                    )
