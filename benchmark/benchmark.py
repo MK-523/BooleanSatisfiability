@@ -318,3 +318,43 @@ def run_benchmark(
                         policy_prob_mean=float(probabilities.mean()),
                         policy_prob_max=float(probabilities.max()),
                     )
+                )
+
+    return results, split_manifest
+
+
+def aggregate_results(results: Sequence[Result]) -> list[dict]:
+    groups: dict[tuple, list[Result]] = {}
+    for row in results:
+        key = (row.config, row.method, row.candidate_budget)
+        groups.setdefault(key, []).append(row)
+
+    summary = []
+    for (config, method, budget), rows in sorted(groups.items()):
+        def mean_std(field: str) -> tuple[float, float]:
+            values = np.asarray([float(getattr(row, field)) for row in rows], dtype=float)
+            return float(values.mean()), float(values.std(ddof=1)) if len(values) > 1 else 0.0
+
+        satisfaction_mean, satisfaction_std = mean_std("mean_satisfaction_ratio")
+        solved_mean, solved_std = mean_std("solved_rate")
+        optimal_mean, optimal_std = mean_std("optimal_rate")
+        regret_mean, regret_std = mean_std("mean_regret_to_exact")
+        runtime_mean, runtime_std = mean_std("runtime_ms_per_formula")
+        training_mean, training_std = mean_std("training_ms")
+        first = rows[0]
+        summary.append(
+            {
+                "config": config,
+                "num_variables": first.num_variables,
+                "num_clauses": first.num_clauses,
+                "clause_size": first.clause_size,
+                "train_formulas": first.train_formulas,
+                "test_formulas": first.test_formulas,
+                "method": method,
+                "candidate_budget": budget,
+                "runs": len(rows),
+                "mean_satisfaction_ratio": satisfaction_mean,
+                "std_satisfaction_ratio": satisfaction_std,
+                "mean_solved_rate": solved_mean,
+                "std_solved_rate": solved_std,
+                "mean_optimal_rate": optimal_mean,
