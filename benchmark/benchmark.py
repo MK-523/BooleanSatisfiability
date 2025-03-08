@@ -358,3 +358,43 @@ def aggregate_results(results: Sequence[Result]) -> list[dict]:
                 "mean_solved_rate": solved_mean,
                 "std_solved_rate": solved_std,
                 "mean_optimal_rate": optimal_mean,
+                "std_optimal_rate": optimal_std,
+                "mean_regret_to_exact": regret_mean,
+                "std_regret_to_exact": regret_std,
+                "mean_runtime_ms_per_formula": runtime_mean,
+                "std_runtime_ms_per_formula": runtime_std,
+                "mean_training_ms": training_mean,
+                "std_training_ms": training_std,
+            }
+        )
+    return summary
+
+
+def write_csv(path: Path, rows: Iterable[dict]) -> None:
+    rows = list(rows)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output-dir", type=Path, default=Path("results"))
+    parser.add_argument("--data-seed", type=int, default=523)
+    parser.add_argument("--datasets", type=int, default=5)
+    parser.add_argument("--runs", type=int, default=3)
+    parser.add_argument("--update-budget", type=int, default=30_000)
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    configs = [Config(8, 32), Config(10, 40), Config(12, 48)]
+    run_seeds = [10_000 + i for i in range(args.runs)]
+    data_seeds = [args.data_seed + 1_009 * i for i in range(args.datasets)]
+    results, manifest = run_benchmark(
+        configs=configs,
+        data_seeds=data_seeds,
+        run_seeds=run_seeds,
