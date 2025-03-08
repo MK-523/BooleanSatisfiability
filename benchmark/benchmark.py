@@ -398,3 +398,28 @@ def main() -> None:
         configs=configs,
         data_seeds=data_seeds,
         run_seeds=run_seeds,
+        budgets=[1, 64],
+        update_budget=args.update_budget,
+    )
+    write_csv(args.output_dir / "benchmark_runs.csv", [asdict(row) for row in results])
+    write_csv(args.output_dir / "benchmark_summary.csv", aggregate_results(results))
+    (args.output_dir / "split_manifest.json").write_text(
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+    )
+    metadata = {
+        "base_data_seed": args.data_seed,
+        "data_seeds": data_seeds,
+        "run_seeds": run_seeds,
+        "update_budget": args.update_budget,
+        "candidate_budgets": [1, 64],
+        "configs": [asdict(config) for config in configs],
+        "numpy_version": np.__version__,
+    }
+    (args.output_dir / "run_metadata.json").write_text(
+        json.dumps(metadata, indent=2) + "\n", encoding="utf-8"
+    )
+    print(f"Wrote {len(results)} run rows to {args.output_dir}")
+
+
+if __name__ == "__main__":
+    main()
