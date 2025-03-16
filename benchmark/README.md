@@ -38,3 +38,8 @@ The reported methods are:
 
 Metrics include satisfaction ratio, solved rate, exact-optimal rate, regret to exact, evaluation time, paired differences, and 95% confidence intervals.
 
+## Main finding
+
+At 64 candidates per formula, every paired 95% confidence interval for policy-minus-random satisfaction ratio and solved rate includes zero. The current policy class therefore does not demonstrate formula-specific learning.
+
+See [`BENCHMARK_REPORT.md`](BENCHMARK_REPORT.md) for the complete result and methodological limitations.
