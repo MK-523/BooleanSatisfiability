@@ -38,3 +38,43 @@ datasets and 200 distinct test formulas per size.
 | 10 variables, 40 clauses | Exact enumeration | 1,024 | 0.9950 | 80.0% | 100.0% | 0.234 |
 | 10 variables, 40 clauses | Uniform random | 1 | 0.8715 | 0.5% | 0.5% | 0.019 |
 | 10 variables, 40 clauses | Policy gradient | 1 | 0.8770 | 0.5% | 0.8% | 0.024 |
+| 10 variables, 40 clauses | Uniform random | 64 | 0.9753 | 21.7% | 34.5% | 0.039 |
+| 10 variables, 40 clauses | Policy gradient | 64 | 0.9754 | 22.0% | 34.3% | 0.045 |
+| 12 variables, 48 clauses | Exact enumeration | 4,096 | 0.9970 | 85.5% | 100.0% | 5.480 |
+| 12 variables, 48 clauses | Uniform random | 1 | 0.8758 | 0.0% | 0.2% | 0.020 |
+| 12 variables, 48 clauses | Policy gradient | 1 | 0.8758 | 0.0% | 0.2% | 0.026 |
+| 12 variables, 48 clauses | Uniform random | 64 | 0.9692 | 10.3% | 13.3% | 0.045 |
+| 12 variables, 48 clauses | Policy gradient | 64 | 0.9691 | 9.2% | 12.3% | 0.052 |
+
+The exact solved rate is below 100% because some random formulas are
+unsatisfiable; exact-optimal rate remains 100% by definition. The policy's mean
+training time was 0.95--1.02 seconds per run and is excluded from evaluation
+runtime.
+
+At the equal 64-candidate budget, paired policy-minus-random differences were:
+
+| Formula size | Satisfaction-ratio difference (95% CI) | Solved-rate difference (95% CI) |
+|---|---:|---:|
+| 8 variables, 32 clauses | -0.00068 (-0.00305, 0.00170) | -1.50 pp (-8.24, 5.24) |
+| 10 variables, 40 clauses | +0.00004 (-0.00164, 0.00172) | +0.33 pp (-3.98, 4.64) |
+| 12 variables, 48 clauses | -0.00017 (-0.00212, 0.00177) | -1.17 pp (-4.43, 2.10) |
+
+Every interval includes zero. The formula-agnostic policy therefore showed no
+reliable held-out advantage over uniform random multistart search. With one
+candidate, it improved mean satisfaction by 0.55 percentage points on the
+10-variable configuration, but did not improve solved rate and did not reproduce
+consistently across the other sizes. The defensible conclusion is a negative
+result: the current policy class does not demonstrate formula-specific learning.
+
+Raw values are retained in `results/benchmark_runs.csv`; means and sample
+standard deviations are in `results/benchmark_summary.csv`. The benchmark
+regenerates dataset identities and split membership in
+`results/split_manifest.json` from the published seeds.
+
+## Interpretation guardrails
+
+- The NumPy policy is a behavior-level reconstruction, not a bit-for-bit port of
+  the PyTorch MLP. Both represent one formula-independent Bernoulli probability
+  per variable; their parameterization and training dynamics differ.
+- Random k-CNF formulas are synthetic. Results do not generalize to industrial
+  SAT instances or other distributions.
