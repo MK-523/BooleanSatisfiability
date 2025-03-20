@@ -78,3 +78,31 @@ regenerates dataset identities and split membership in
   per variable; their parameterization and training dynamics differ.
 - Random k-CNF formulas are synthetic. Results do not generalize to industrial
   SAT instances or other distributions.
+- Exact enumeration is practical only because this audit uses at most 12
+  variables. It is an oracle for evaluation, not a scalable solver.
+- A 64-candidate result measures multistart search, not single-shot inference.
+- Runtime is hardware- and implementation-dependent. Exact search is vectorized;
+  policy and random evaluation use the same vectorized scorer.
+
+## Smallest methodologically valid fix
+
+Before making a learned-solver claim, the project should:
+
+1. Fix preprocessing so the row mask is one Boolean per clause, preserve the
+   `(num_clauses, clause_size)` shape, canonicalize clauses, and add regression
+   tests for tautologies and duplicates.
+2. Encode each input formula and condition assignment probabilities on that
+   encoding. A literal-clause bipartite graph or a clause/literal incidence
+   tensor would preserve variable identity and sign information.
+3. Separate formula generation into immutable train/validation/test splits and
+   publish seeds plus instance fingerprints.
+4. Compare equal candidate/time budgets against uniform random, a simple local
+   search baseline, and exact optima on small instances.
+5. Report mean and dispersion across multiple seeds, solved rate, satisfaction
+   ratio, optimality gap, and train/evaluation runtime.
+6. Add a reward baseline or advantage estimator and document all optimization
+   settings; otherwise REINFORCE variance makes training unstable.
+
+Until those changes exist and are measured, the accurate project description is
+"audited and benchmarked a formula-agnostic policy-gradient baseline for random
+3-SAT," not "built an RL SAT solver."
