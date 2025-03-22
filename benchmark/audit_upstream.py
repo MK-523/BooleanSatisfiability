@@ -38,3 +38,17 @@ def main() -> None:
     report = {
         "audit_source": "legacy/original",
         "audit_source_sha256": source_digest,
+        "policy_input_expression": "torch.ones(self.num_variables)",
+        "policy_uses_clauses": bool(re.search(r"self\.policy\(\s*clauses", model_text)),
+        "policy_uses_constant_ones": "self.policy(torch.ones(self.num_variables))" in model_text,
+        "preprocess_uses_two_dimensional_mask": "clauses[non_tautology_mask]" in data_text,
+        "preprocess_shape_reproduction": reproduce_preprocess_shape(),
+    }
+    output = ROOT / "results" / "upstream_audit.json"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(report, indent=2))
+
+
+if __name__ == "__main__":
+    main()
