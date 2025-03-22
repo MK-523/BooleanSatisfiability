@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+"""Reproduce the two blocking issues in the repository-root SAT prototype."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+from pathlib import Path
+
+import numpy as np
+
+
+ROOT = Path(__file__).resolve().parent
+REPO_ROOT = ROOT.parent
+LEGACY_ROOT = REPO_ROOT / "legacy" / "original"
+
+
+def reproduce_preprocess_shape() -> dict:
+    clauses = np.asarray([[1, 2, 3], [-1, 2, 3], [1, -2, 3]], dtype=np.int16)
+    comparison = clauses[:, :, None] == -clauses[:, None, :]
+    mask = comparison.sum(axis=2) == 0
+    selected = clauses[mask]
+    return {
+        "input_shape": list(clauses.shape),
+        "mask_shape": list(mask.shape),
+        "output_shape": list(selected.shape),
+        "output_rank": int(selected.ndim),
+    }
+
+
+def main() -> None:
+    model_text = (LEGACY_ROOT / "model.py").read_text(encoding="utf-8")
+    data_text = (LEGACY_ROOT / "data_utils.py").read_text(encoding="utf-8")
+    source_digest = hashlib.sha256(
+        model_text.encode("utf-8") + b"\0" + data_text.encode("utf-8")
+    ).hexdigest()
+    report = {
+        "audit_source": "legacy/original",
+        "audit_source_sha256": source_digest,
