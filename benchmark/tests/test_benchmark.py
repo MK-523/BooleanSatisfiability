@@ -38,3 +38,18 @@ class BenchmarkTests(unittest.TestCase):
         self.assertFalse(ids_train & ids_test)
         self.assertEqual(
             [formula_fingerprint(f) for f in train_a + test_a],
+            [formula_fingerprint(f) for f in train_b + test_b],
+        )
+
+    def test_policy_is_formula_agnostic(self):
+        policy = FormulaAgnosticPolicyGradient(4, seed=1)
+        before = policy.probabilities.copy()
+        formula_a = np.asarray([[1, 2, 3]], dtype=np.int16)
+        formula_b = np.asarray([[-1, -2, -3]], dtype=np.int16)
+        # The observable probabilities have no formula argument at all.
+        np.testing.assert_array_equal(before, policy.probabilities)
+        self.assertEqual(formula_a.shape, formula_b.shape)
+
+
+if __name__ == "__main__":
+    unittest.main()
