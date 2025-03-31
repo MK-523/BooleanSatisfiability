@@ -1,0 +1,22 @@
+{
+  "audit_source": "legacy/original",
+  "audit_source_sha256": "8118101b3be6998cbf69086809273d6af739f41e9b396ebd23c98528535e007e",
+  "policy_input_expression": "torch.ones(self.num_variables)",
+  "policy_uses_clauses": false,
+  "policy_uses_constant_ones": true,
+  "preprocess_uses_two_dimensional_mask": true,
+  "preprocess_shape_reproduction": {
+    "input_shape": [
+      3,
+      3
+    ],
+    "mask_shape": [
+      3,
+      3
+    ],
+    "output_shape": [
+      9
+    ],
+    "output_rank": 1
+  }
+}
