@@ -1,0 +1,40 @@
+{
+  "base_data_seed": 523,
+  "data_seeds": [
+    523,
+    1532,
+    2541,
+    3550,
+    4559
+  ],
+  "run_seeds": [
+    10000,
+    10001,
+    10002
+  ],
+  "update_budget": 30000,
+  "candidate_budgets": [
+    1,
+    64
+  ],
+  "configs": [
+    {
+      "num_variables": 8,
+      "num_clauses": 32,
+      "clause_size": 3,
+      "train_formulas": 160,
+      "test_formulas": 40
+    },
+    {
+      "num_variables": 10,
+      "num_clauses": 40,
+      "clause_size": 3,
+      "train_formulas": 160,
+      "test_formulas": 40
+    },
+    {
+      "num_variables": 12,
+      "num_clauses": 48,
+      "clause_size": 3,
+      "train_formulas": 160,
+      "test_formulas": 40
