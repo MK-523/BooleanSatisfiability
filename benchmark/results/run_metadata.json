@@ -38,3 +38,7 @@
       "clause_size": 3,
       "train_formulas": 160,
       "test_formulas": 40
+    }
+  ],
+  "numpy_version": "2.3.5"
+}
