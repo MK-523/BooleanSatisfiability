@@ -78,3 +78,43 @@ class DPLLSolver:
             self.stats.elapsed_ms = (perf_counter() - started) * 1000
             return SolveResult(
                 SolveStatus.UNKNOWN,
+                None,
+                self.stats,
+                verified=False,
+                reason=f"search node limit {self.max_nodes} reached",
+            )
+
+        self.stats.elapsed_ms = (perf_counter() - started) * 1000
+        if assignment is None:
+            return SolveResult(
+                SolveStatus.UNSAT,
+                None,
+                self.stats,
+                verified=True,
+            )
+
+        completed = {
+            variable: assignment.get(variable, False) for variable in formula.variables
+        }
+        verified = is_satisfied(formula, completed)
+        if not verified:
+            raise AssertionError("internal error: DPLL returned an invalid assignment")
+        return SolveResult(SolveStatus.SAT, completed, self.stats, verified=True)
+
+    def _search(
+        self,
+        clauses: tuple[tuple[int, ...], ...],
+        assignment: Assignment,
+        *,
+        depth: int,
+    ) -> Assignment | None:
+        if self.max_nodes is not None and self.stats.nodes >= self.max_nodes:
+            raise _SearchLimitReached
+        self.stats.nodes += 1
+        self.stats.max_depth = max(self.stats.max_depth, depth)
+
+        reduced, propagated_assignment, conflict = self._propagate(
+            clauses, assignment
+        )
+        if conflict:
+            self.stats.conflicts += 1
