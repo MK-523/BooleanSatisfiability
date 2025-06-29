@@ -118,3 +118,43 @@ class DPLLSolver:
         )
         if conflict:
             self.stats.conflicts += 1
+            return None
+        if not reduced:
+            return propagated_assignment
+
+        variable, preferred_value = self._choose_branch(reduced)
+        self.stats.decisions += 1
+        for value in (preferred_value, not preferred_value):
+            child_assignment = dict(propagated_assignment)
+            child_assignment[variable] = value
+            child_clauses = self._apply_literal(
+                reduced, variable if value else -variable
+            )
+            result = self._search(child_clauses, child_assignment, depth=depth + 1)
+            if result is not None:
+                return result
+            self.stats.backtracks += 1
+        return None
+
+    def _propagate(
+        self,
+        clauses: tuple[tuple[int, ...], ...],
+        assignment: Assignment,
+    ) -> tuple[tuple[tuple[int, ...], ...], Assignment, bool]:
+        reduced = clauses
+        current = dict(assignment)
+        while True:
+            if any(not clause for clause in reduced):
+                return reduced, current, True
+            if not reduced:
+                return reduced, current, False
+
+            unit_literals = sorted(
+                (clause[0] for clause in reduced if len(clause) == 1),
+                key=lambda literal: (abs(literal), literal < 0),
+            )
+            if unit_literals:
+                literal = unit_literals[0]
+                variable = abs(literal)
+                value = literal > 0
+                existing = current.get(variable)
