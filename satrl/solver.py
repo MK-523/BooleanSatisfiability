@@ -158,3 +158,43 @@ class DPLLSolver:
                 variable = abs(literal)
                 value = literal > 0
                 existing = current.get(variable)
+                if existing is not None and existing != value:
+                    return reduced, current, True
+                current[variable] = value
+                self.stats.propagations += 1
+                reduced = self._apply_literal(reduced, literal)
+                continue
+
+            polarities: dict[int, set[bool]] = {}
+            for clause in reduced:
+                for literal in clause:
+                    polarities.setdefault(abs(literal), set()).add(literal > 0)
+            pure = sorted(
+                (
+                    (variable, next(iter(values)))
+                    for variable, values in polarities.items()
+                    if len(values) == 1 and variable not in current
+                ),
+                key=lambda item: item[0],
+            )
+            if pure:
+                variable, value = pure[0]
+                current[variable] = value
+                self.stats.pure_literal_assignments += 1
+                reduced = self._apply_literal(
+                    reduced, variable if value else -variable
+                )
+                continue
+            return reduced, current, False
+
+    @staticmethod
+    def _apply_literal(
+        clauses: Iterable[tuple[int, ...]], literal: int
+    ) -> tuple[tuple[int, ...], ...]:
+        opposite = -literal
+        reduced: list[tuple[int, ...]] = []
+        for clause in clauses:
+            if literal in clause:
+                continue
+            if opposite in clause:
+                reduced.append(tuple(item for item in clause if item != opposite))
