@@ -198,3 +198,23 @@ class DPLLSolver:
                 continue
             if opposite in clause:
                 reduced.append(tuple(item for item in clause if item != opposite))
+            else:
+                reduced.append(clause)
+        return tuple(reduced)
+
+    @staticmethod
+    def _choose_branch(clauses: tuple[tuple[int, ...], ...]) -> tuple[int, bool]:
+        scores: dict[int, float] = {}
+        for clause in clauses:
+            weight = 2.0 ** -len(clause)
+            for literal in clause:
+                scores[literal] = scores.get(literal, 0.0) + weight
+        literal = max(
+            scores,
+            key=lambda item: (scores[item], -abs(item), item > 0),
+        )
+        return abs(literal), literal > 0
+
+
+def solve(formula: CNFFormula, *, max_nodes: int | None = None) -> SolveResult:
+    return DPLLSolver(max_nodes=max_nodes).solve(formula)
