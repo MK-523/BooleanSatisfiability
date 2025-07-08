@@ -38,3 +38,43 @@ def normalize_clause(literals: Iterable[int]) -> Clause | None:
     return tuple(sorted(unique, key=_literal_sort_key))
 
 
+def preprocess_clauses(
+    clauses: Iterable[Iterable[int]], *, remove_subsumed: bool = True
+) -> tuple[Clause, ...]:
+    """Return an equivalent, deterministic tuple of clauses.
+
+    The transformation removes tautologies, repeated literals, repeated
+    clauses, and optionally clauses subsumed by a shorter clause. Empty clauses
+    are retained because they make the formula unsatisfiable.
+    """
+
+    normalized: set[Clause] = set()
+    for clause in clauses:
+        canonical = normalize_clause(clause)
+        if canonical is not None:
+            normalized.add(canonical)
+
+    ordered = sorted(normalized, key=lambda clause: (len(clause), clause))
+    if not remove_subsumed:
+        return tuple(ordered)
+
+    kept: list[Clause] = []
+    kept_sets: list[frozenset[int]] = []
+    for clause in ordered:
+        literals = frozenset(clause)
+        if any(existing.issubset(literals) for existing in kept_sets):
+            continue
+        kept.append(clause)
+        kept_sets.append(literals)
+    return tuple(kept)
+
+
+@dataclass(frozen=True, slots=True)
+class CNFFormula:
+    """An immutable CNF formula using DIMACS-style signed integers."""
+
+    num_variables: int
+    clauses: tuple[Clause, ...]
+
+    def __post_init__(self) -> None:
+        if self.num_variables < 0:
