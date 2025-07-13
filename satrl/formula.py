@@ -78,3 +78,43 @@ class CNFFormula:
 
     def __post_init__(self) -> None:
         if self.num_variables < 0:
+            raise CNFError("num_variables must be non-negative")
+        for clause_index, clause in enumerate(self.clauses, start=1):
+            for literal in clause:
+                if literal == 0:
+                    raise CNFError(
+                        f"clause {clause_index} contains literal 0; use an empty "
+                        "tuple for an empty clause"
+                    )
+                if abs(literal) > self.num_variables:
+                    raise CNFError(
+                        f"literal {literal} in clause {clause_index} exceeds "
+                        f"declared variable count {self.num_variables}"
+                    )
+
+    @classmethod
+    def from_clauses(
+        cls,
+        clauses: Iterable[Iterable[int]],
+        *,
+        num_variables: int | None = None,
+        preprocess: bool = True,
+        remove_subsumed: bool = True,
+    ) -> "CNFFormula":
+        materialized = tuple(tuple(int(literal) for literal in clause) for clause in clauses)
+        inferred = max(
+            (abs(literal) for clause in materialized for literal in clause),
+            default=0,
+        )
+        variable_count = inferred if num_variables is None else int(num_variables)
+        processed = (
+            preprocess_clauses(materialized, remove_subsumed=remove_subsumed)
+            if preprocess
+            else materialized
+        )
+        return cls(variable_count, processed)
+
+    @property
+    def variables(self) -> range:
+        return range(1, self.num_variables + 1)
+
