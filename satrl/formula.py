@@ -118,3 +118,43 @@ class CNFFormula:
     def variables(self) -> range:
         return range(1, self.num_variables + 1)
 
+    @property
+    def is_trivially_unsatisfiable(self) -> bool:
+        return any(not clause for clause in self.clauses)
+
+    @property
+    def is_empty(self) -> bool:
+        return not self.clauses
+
+
+def clause_value(clause: Sequence[int], assignment: Mapping[int, bool]) -> bool | None:
+    """Evaluate a clause under a partial assignment.
+
+    ``True`` means the clause is satisfied, ``False`` means every literal is
+    assigned false, and ``None`` means its value is still undecided.
+    """
+
+    undecided = False
+    for literal in clause:
+        variable = abs(literal)
+        if variable not in assignment:
+            undecided = True
+            continue
+        value = assignment[variable]
+        if value == (literal > 0):
+            return True
+    return None if undecided else False
+
+
+def formula_value(formula: CNFFormula, assignment: Mapping[int, bool]) -> bool | None:
+    """Evaluate a formula under a partial assignment."""
+
+    undecided = False
+    for clause in formula.clauses:
+        value = clause_value(clause, assignment)
+        if value is False:
+            return False
+        if value is None:
+            undecided = True
+    return None if undecided else True
+
