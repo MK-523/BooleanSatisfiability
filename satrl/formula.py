@@ -158,3 +158,16 @@ def formula_value(formula: CNFFormula, assignment: Mapping[int, bool]) -> bool |
             undecided = True
     return None if undecided else True
 
+
+def is_satisfied(formula: CNFFormula, assignment: Mapping[int, bool]) -> bool:
+    return formula_value(formula, assignment) is True
+
+
+def unsatisfied_clause_indices(
+    formula: CNFFormula, assignment: Mapping[int, bool]
+) -> tuple[int, ...]:
+    return tuple(
+        index
+        for index, clause in enumerate(formula.clauses)
+        if clause_value(clause, assignment) is not True
+    )
