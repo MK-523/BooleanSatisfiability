@@ -38,3 +38,43 @@ def parse_dimacs(
                 num_variables = int(parts[2])
                 declared_clauses = int(parts[3])
             except ValueError as exc:
+                raise CNFError(f"line {line_number}: header counts must be integers") from exc
+            if num_variables < 0 or declared_clauses < 0:
+                raise CNFError(f"line {line_number}: header counts must be non-negative")
+            continue
+        if line.startswith("%"):
+            break
+        if num_variables is None:
+            raise CNFError(f"line {line_number}: clause encountered before problem header")
+
+        for token in line.split():
+            try:
+                literal = int(token)
+            except ValueError as exc:
+                raise CNFError(
+                    f"line {line_number}: invalid integer token {token!r}"
+                ) from exc
+            if literal == 0:
+                clauses.append(tuple(current_clause))
+                current_clause.clear()
+                continue
+            if abs(literal) > num_variables:
+                raise CNFError(
+                    f"line {line_number}: literal {literal} exceeds declared "
+                    f"variable count {num_variables}"
+                )
+            current_clause.append(literal)
+
+    if num_variables is None or declared_clauses is None:
+        raise CNFError("missing DIMACS problem header")
+    if current_clause:
+        raise CNFError("final clause is not terminated by 0")
+    if len(clauses) != declared_clauses:
+        raise CNFError(
+            f"header declares {declared_clauses} clauses but document contains "
+            f"{len(clauses)}"
+        )
+    return CNFFormula.from_clauses(
+        clauses,
+        num_variables=num_variables,
+        preprocess=preprocess,
