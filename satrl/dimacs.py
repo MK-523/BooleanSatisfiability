@@ -78,3 +78,35 @@ def parse_dimacs(
         clauses,
         num_variables=num_variables,
         preprocess=preprocess,
+        remove_subsumed=remove_subsumed,
+    )
+
+
+def read_dimacs(
+    path: str | Path, *, preprocess: bool = True, remove_subsumed: bool = True
+) -> CNFFormula:
+    return parse_dimacs(
+        Path(path).read_text(encoding="utf-8"),
+        preprocess=preprocess,
+        remove_subsumed=remove_subsumed,
+    )
+
+
+def to_dimacs(formula: CNFFormula, *, comment: str | None = None) -> str:
+    lines: list[str] = []
+    if comment:
+        for comment_line in comment.splitlines():
+            lines.append(f"c {comment_line}")
+    lines.append(f"p cnf {formula.num_variables} {len(formula.clauses)}")
+    lines.extend(" ".join((*map(str, clause), "0")) for clause in formula.clauses)
+    return "\n".join(lines) + "\n"
+
+
+def write_dimacs(
+    formula: CNFFormula, destination: str | Path | TextIO, *, comment: str | None = None
+) -> None:
+    text = to_dimacs(formula, comment=comment)
+    if hasattr(destination, "write"):
+        destination.write(text)  # type: ignore[union-attr]
+    else:
+        Path(destination).write_text(text, encoding="utf-8")
