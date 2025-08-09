@@ -38,3 +38,43 @@ def _build_parser() -> argparse.ArgumentParser:
     solve_parser.set_defaults(handler=_handle_solve)
 
     generate_parser = subparsers.add_parser(
+        "generate", help="generate a deterministic random k-CNF instance"
+    )
+    generate_parser.add_argument("--variables", type=int, required=True)
+    generate_parser.add_argument("--clauses", type=int, required=True)
+    generate_parser.add_argument("--clause-size", type=int, default=3)
+    generate_parser.add_argument("--seed", type=int, required=True)
+    generate_parser.add_argument(
+        "--planted",
+        action="store_true",
+        help="generate clauses satisfied by a hidden deterministic assignment",
+    )
+    generate_parser.add_argument(
+        "--output", default="-", help="output DIMACS path, or '-' for stdout"
+    )
+    generate_parser.set_defaults(handler=_handle_generate)
+
+    benchmark_parser = subparsers.add_parser(
+        "benchmark", help="run a reproducible small-instance exact-solver benchmark"
+    )
+    benchmark_parser.add_argument("--variables", type=int, default=10)
+    benchmark_parser.add_argument("--clauses", type=int, default=40)
+    benchmark_parser.add_argument("--clause-size", type=int, default=3)
+    benchmark_parser.add_argument("--instances", type=int, default=20)
+    benchmark_parser.add_argument("--seed", type=int, default=523)
+    benchmark_parser.add_argument(
+        "--oracle-variable-limit",
+        type=int,
+        default=16,
+        help="cross-check DPLL with enumeration up to this variable count",
+    )
+    benchmark_parser.add_argument(
+        "--output", help="optional .json or .csv destination for per-instance records"
+    )
+    benchmark_parser.set_defaults(handler=_handle_benchmark)
+
+    return parser
+
+
+def _read_formula(path: str, *, preprocess: bool):
+    if path == "-":
