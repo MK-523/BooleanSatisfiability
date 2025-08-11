@@ -78,3 +78,43 @@ def _build_parser() -> argparse.ArgumentParser:
 
 def _read_formula(path: str, *, preprocess: bool):
     if path == "-":
+        return parse_dimacs(sys.stdin.read(), preprocess=preprocess)
+    return read_dimacs(path, preprocess=preprocess)
+
+
+def _handle_solve(args: argparse.Namespace) -> int:
+    formula = _read_formula(args.input, preprocess=not args.no_preprocess)
+    result = solve(formula, max_nodes=args.max_nodes)
+    if args.json:
+        payload = result.to_dict()
+        payload["formula"] = {
+            "variables": formula.num_variables,
+            "clauses": len(formula.clauses),
+        }
+        print(json.dumps(payload, indent=2, sort_keys=True))
+    else:
+        print(f"s {result.status.value}")
+        if result.assignment is not None:
+            literals = [
+                str(variable if value else -variable)
+                for variable, value in sorted(result.assignment.items())
+            ]
+            print(f"v {' '.join(literals)} 0")
+        print(
+            "c "
+            f"verified={str(result.verified).lower()} "
+            f"nodes={result.stats.nodes} decisions={result.stats.decisions} "
+            f"conflicts={result.stats.conflicts} "
+            f"elapsed_ms={result.stats.elapsed_ms:.3f}"
+        )
+        if result.reason:
+            print(f"c {result.reason}")
+    return 3 if result.status is SolveStatus.UNKNOWN else 0
+
+
+def _handle_generate(args: argparse.Namespace) -> int:
+    generated = generate_random_cnf(
+        args.variables,
+        args.clauses,
+        args.clause_size,
+        seed=args.seed,
