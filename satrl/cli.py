@@ -158,3 +158,12 @@ def _handle_benchmark(args: argparse.Namespace) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
+    args = parser.parse_args(argv)
+    try:
+        return int(args.handler(args))
+    except (CNFError, OSError, ValueError) as exc:
+        parser.exit(2, f"satrl: error: {exc}\n")
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
