@@ -38,3 +38,43 @@ class BenchmarkRecord:
 
 def run_benchmark(
     *,
+    variables: int,
+    clauses: int,
+    clause_size: int,
+    instances: int,
+    seed: int,
+    oracle_variable_limit: int = 16,
+) -> list[BenchmarkRecord]:
+    if instances <= 0:
+        raise ValueError("instances must be positive")
+
+    records: list[BenchmarkRecord] = []
+    for instance in range(instances):
+        instance_seed = seed + instance
+        generated = generate_random_cnf(
+            variables,
+            clauses,
+            clause_size,
+            seed=instance_seed,
+        )
+        formula_sha256 = hashlib.sha256(
+            to_dimacs(generated.formula).encode("utf-8")
+        ).hexdigest()
+        result = solve(generated.formula)
+        oracle_agrees: bool | None = None
+        if variables <= oracle_variable_limit:
+            oracle_assignment = brute_force_solve(
+                generated.formula, variable_limit=oracle_variable_limit
+            )
+            oracle_sat = oracle_assignment is not None
+            oracle_agrees = oracle_sat == (result.status is SolveStatus.SAT)
+        verified = result.verified and (
+            result.assignment is None
+            or is_satisfied(generated.formula, result.assignment)
+        )
+        records.append(
+            BenchmarkRecord(
+                instance=instance,
+                seed=instance_seed,
+                variables=variables,
+                clauses=clauses,
