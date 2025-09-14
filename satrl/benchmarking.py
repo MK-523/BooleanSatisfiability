@@ -78,3 +78,43 @@ def run_benchmark(
                 seed=instance_seed,
                 variables=variables,
                 clauses=clauses,
+                clause_size=clause_size,
+                formula_sha256=formula_sha256,
+                status=result.status.value,
+                verified=verified,
+                oracle_agrees=oracle_agrees,
+                nodes=result.stats.nodes,
+                decisions=result.stats.decisions,
+                conflicts=result.stats.conflicts,
+                backtracks=result.stats.backtracks,
+                elapsed_ms=result.stats.elapsed_ms,
+            )
+        )
+    return records
+
+
+def summarize(records: list[BenchmarkRecord]) -> dict[str, object]:
+    if not records:
+        raise ValueError("cannot summarize an empty benchmark")
+    elapsed = [record.elapsed_ms for record in records]
+    nodes = [record.nodes for record in records]
+    return {
+        "instances": len(records),
+        "sat": sum(record.status == SolveStatus.SAT.value for record in records),
+        "unsat": sum(record.status == SolveStatus.UNSAT.value for record in records),
+        "all_assignments_verified": all(record.verified for record in records),
+        "all_oracle_checks_agree": all(
+            record.oracle_agrees is not False for record in records
+        ),
+        "elapsed_ms": {
+            "mean": mean(elapsed),
+            "median": median(elapsed),
+            "max": max(elapsed),
+        },
+        "nodes": {
+            "mean": mean(nodes),
+            "median": median(nodes),
+            "max": max(nodes),
+        },
+    }
+
