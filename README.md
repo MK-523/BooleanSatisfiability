@@ -27,4 +27,21 @@ generation, preprocessing, training, and evaluation components.
    - trains RL agent on dataset
    - evaluates trained model on test formula
    - prints final SAT reward corresponding to test formula
+  
+5. Formula display & solution utilities (formula_utils.py)
+   - display_formula: prints CNF formula in human-readable format with ∨ operator
+   - interpret_solution: converts tensor of sampled variables into dictionary of boolean assignments
+
+6. SAT problem solver wrapper (solver.py)
+   - solve_sat_problem: generates random formula, preprocesses it, samples assignments using SATSolverRL
+   - computes SAT reward for the sampled assignment
+   - returns original formula, sampled variables, and reward
+   - modular function separating solving logic from main execution
+
+7. Example SAT problem run (example_solver_run.py)
+   - sets model parameters for number of variables, clauses, and clause size
+   - instantiates SATSolverRL model
+   - solves SAT problem using solve_sat_problem
+   - prints interpreted solution and satisfiability score
+   - verifies solution clause by clause and prints verification score
 
