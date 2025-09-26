@@ -118,3 +118,38 @@ def summarize(records: list[BenchmarkRecord]) -> dict[str, object]:
         },
     }
 
+
+def write_json_report(
+    records: list[BenchmarkRecord], destination: str | Path
+) -> None:
+    if not records:
+        raise ValueError("cannot write an empty benchmark")
+    payload = {
+        "schema_version": 1,
+        "environment": {
+            "python": sys.version.split()[0],
+            "platform": platform.platform(),
+        },
+        "configuration": {
+            "variables": records[0].variables,
+            "clauses": records[0].clauses,
+            "clause_size": records[0].clause_size,
+            "first_seed": records[0].seed,
+        },
+        "summary": summarize(records),
+        "records": [asdict(record) for record in records],
+    }
+    Path(destination).write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+
+
+def write_csv_report(
+    records: list[BenchmarkRecord], destination: str | Path
+) -> None:
+    if not records:
+        raise ValueError("cannot write an empty benchmark")
+    with Path(destination).open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(asdict(records[0])))
+        writer.writeheader()
+        writer.writerows(asdict(record) for record in records)
