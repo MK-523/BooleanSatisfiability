@@ -38,3 +38,9 @@ class FormulaTests(unittest.TestCase):
         formula = CNFFormula.from_clauses([[1, -2], [2]], num_variables=2)
         self.assertIsNone(clause_value((1, -2), {}))
         self.assertIsNone(formula_value(formula, {1: True}))
+        self.assertFalse(is_satisfied(formula, {1: True}))
+        self.assertTrue(is_satisfied(formula, {1: True, 2: True}))
+
+
+if __name__ == "__main__":
+    unittest.main()
