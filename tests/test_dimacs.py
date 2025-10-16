@@ -38,3 +38,15 @@ p cnf 3 2
     def test_clause_must_end_with_zero(self):
         with self.assertRaisesRegex(CNFError, "not terminated"):
             parse_dimacs("p cnf 2 1\n1 -2\n")
+
+    def test_out_of_range_literal_is_rejected(self):
+        with self.assertRaisesRegex(CNFError, "exceeds declared"):
+            parse_dimacs("p cnf 2 1\n3 0\n")
+
+    def test_empty_clause_parses(self):
+        formula = parse_dimacs("p cnf 0 1\n0\n")
+        self.assertEqual(formula.clauses, ((),))
+
+
+if __name__ == "__main__":
+    unittest.main()
