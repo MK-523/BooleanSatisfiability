@@ -38,3 +38,18 @@ class SolverTests(unittest.TestCase):
 
     def test_node_limit_returns_unknown(self):
         formula = CNFFormula.from_clauses([[1, 2], [-1, -2]], num_variables=2)
+        result = DPLLSolver(max_nodes=0).solve(formula)
+        self.assertIs(result.status, SolveStatus.UNKNOWN)
+        self.assertFalse(result.verified)
+        self.assertIn("node limit", result.reason or "")
+
+    def test_solver_instance_can_be_reused(self):
+        solver = DPLLSolver()
+        sat = solver.solve(CNFFormula.from_clauses([[1]], num_variables=1))
+        unsat = solver.solve(CNFFormula.from_clauses([[1], [-1]], num_variables=1))
+        self.assertIs(sat.status, SolveStatus.SAT)
+        self.assertIs(unsat.status, SolveStatus.UNSAT)
+
+
+if __name__ == "__main__":
+    unittest.main()
