@@ -38,3 +38,42 @@ class SolverPropertyTests(unittest.TestCase):
                 if result.assignment is not None:
                     self.assertTrue(is_satisfied(formula, result.assignment))
 
+    def test_preprocessing_preserves_satisfiability(self):
+        for seed in range(60):
+            rng = random.Random(seed)
+            variables = 1 + seed % 6
+            raw_clauses: list[list[int]] = []
+            for _ in range(1 + seed % 14):
+                clause: list[int] = []
+                for _ in range(seed % 5):
+                    variable = rng.randint(1, variables)
+                    clause.append(variable if rng.getrandbits(1) else -variable)
+                raw_clauses.append(clause)
+            raw = CNFFormula.from_clauses(
+                raw_clauses,
+                num_variables=variables,
+                preprocess=False,
+            )
+            processed = CNFFormula.from_clauses(
+                raw_clauses,
+                num_variables=variables,
+                preprocess=True,
+            )
+            with self.subTest(seed=seed):
+                self.assertIs(_brute_force_status(raw), _brute_force_status(processed))
+
+    def test_planted_generator_always_preserves_its_witness(self):
+        for seed in range(30):
+            generated = generate_random_cnf(7, 18, 3, seed=seed, planted=True)
+            with self.subTest(seed=seed):
+                self.assertIsNotNone(generated.planted_assignment)
+                self.assertTrue(
+                    is_satisfied(
+                        generated.formula,
+                        generated.planted_assignment or {},
+                    )
+                )
+
+
+if __name__ == "__main__":
+    unittest.main()
