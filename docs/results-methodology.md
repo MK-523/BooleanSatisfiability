@@ -38,3 +38,32 @@ the requested seed. Each record stores:
 JSON output contains environment and configuration metadata, raw records, and a
 summary. CSV output contains one row per instance. Raw records should be
 retained; a summary alone cannot reveal outliers or a seed-specific failure.
+
+## Comparisons
+
+For solver comparisons:
+
+- use the same immutable DIMACS files for every solver;
+- identify the dataset, generator parameters, seeds, hardware, Python version,
+  dependency versions, and git revision;
+- separate SAT and UNSAT instances when reporting runtime;
+- report median, mean, dispersion, timeouts, and solved count;
+- count UNKNOWN or timeout separately rather than as UNSAT;
+- use wall-time and memory limits consistently;
+- include an established CDCL solver before making competitiveness claims.
+
+The historical `benchmark/` has a different question and objective: it compares
+a reconstruction of the formula-agnostic policy with uniform random candidate
+search on Max-SAT-style satisfaction ratio. Its results must not be merged with
+exact DPLL timing or presented as a learned-versus-exact solver comparison.
+
+## Suggested report structure
+
+1. exact command and revision;
+2. environment and resource limits;
+3. instance manifest with hashes;
+4. correctness-gate output;
+5. raw machine-readable records;
+6. aggregate table with uncertainty or dispersion;
+7. failures, timeouts, and limitations;
+8. conclusion limited to the evaluated distribution and configuration.
