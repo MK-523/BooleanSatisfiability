@@ -40,6 +40,14 @@ reward = satisfied clauses / total clauses
 
 A score of `1.0` means that the sampled assignment satisfied every clause in that formula. A lower score does not establish unsatisfiability; another assignment may perform better.
 
+## Reproducible audit and benchmark
+
+The [`benchmark`](benchmark) directory audits the checked-in implementation and evaluates its observable formula-agnostic policy against equal-budget uniform random search and exact enumeration on small random 3-CNF formulas.
+
+The audit reproduces two blocking issues: preprocessing flattens ordinary two-dimensional formulas, and the model passes a constant all-ones vector to its policy instead of encoding the input clauses. Across five independently generated datasets and three run seeds per dataset, the reconstructed policy showed no reliable advantage over random search at a 64-candidate budget; all paired 95% confidence intervals included zero.
+
+See the [benchmark report](benchmark/BENCHMARK_REPORT.md) for the full protocol, negative result, limitations, and smallest defensible redesign.
+
 ## Current limitations
 
 - The method optimizes a stochastic satisfaction ratio. It does not implement the completeness guarantees of a conventional SAT solver.
@@ -56,4 +64,3 @@ This README intentionally describes only the implementation present in the repos
 ## License
 
 The repository includes an [MIT License](LICENSE).
-
