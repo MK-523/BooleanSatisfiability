@@ -51,10 +51,10 @@ See the [benchmark report](benchmark/BENCHMARK_REPORT.md) for the full protocol,
 ## Current limitations
 
 - The method optimizes a stochastic satisfaction ratio. It does not implement the completeness guarantees of a conventional SAT solver.
-- Training and evaluation use randomly generated formulas; no standard SAT benchmark suite is included.
-- There are no comparisons against random assignment, local search, DPLL/CDCL, or another exact/approximate baseline.
-- The repository does not contain a dependency manifest, fixed benchmark corpus, trained checkpoint, or aggregate result table.
-- The example evaluates a single generated test formula rather than a separated benchmark distribution.
+- Both the original experiment and the added benchmark use randomly generated formulas; no standard SAT benchmark suite is included.
+- The benchmark compares uniform random search and exact enumeration on small instances, but does not yet include local search, DPLL/CDCL, or industrial formulas.
+- The original model path does not contain a trained checkpoint or a fixed benchmark corpus.
+- The original example evaluates a single generated test formula; the added benchmark supplies separated, fingerprinted synthetic splits instead.
 - [`example_solver.py`](example_solver.py) imports `SAT_solver`, while the checked-in model implementation is named [`model.py`](model.py). That import must be reconciled before the verification example is reproducible as checked in.
 
 ## Attribution
