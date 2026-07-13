@@ -1,66 +1,161 @@
-# Policy-Gradient Solver for Boolean Satisfiability
+# SATRL Exact
 
-An experimental PyTorch implementation that uses a stochastic policy to assign truth values in randomly generated CNF formulas.
+SATRL Exact is a dependency-free Python toolkit for reading, generating, and
+exactly solving Boolean satisfiability problems in conjunctive normal form.
+Its supported solver is deterministic DPLL with unit propagation, pure-literal
+elimination, subsumption-aware preprocessing, and a formula-dependent branching
+heuristic.
 
-The model learns assignment probabilities and is rewarded by the fraction of clauses satisfied by a sampled assignment. This makes the repository an exploration of reinforcement learning for Max-SAT-style objectives; it is not an exact SAT solver and does not prove that a formula is satisfiable or unsatisfiable.
+The name preserves the repository's history, but the supported package does not
+claim to be a learned solver. The original policy-gradient prototype ignored
+its input formula and is preserved under [`legacy/original`](legacy/original)
+for reproducible audit work. Its seven original files also remain byte-for-byte
+at the repository root so historical links and imports keep their paths; new
+code should use `satrl`.
 
-## Approach
+## What works end to end
 
-For each CNF formula, the pipeline:
+- strict DIMACS CNF parsing and serialization;
+- shape-preserving clause normalization with explicit validation;
+- exact SAT/UNSAT results when no search-node budget is configured;
+- verified satisfying assignments;
+- `UNKNOWN` rather than a guess when a node budget is exhausted;
+- deterministic random and planted-solution k-CNF generation;
+- small-instance exhaustive enumeration as a correctness oracle;
+- JSON/CSV benchmark reports with raw per-instance records;
+- unit, integration, CLI, and randomized property tests;
+- continuous tests across Python 3.10–3.12.
 
-1. Generates clauses with positive and negated literals.
-2. Preprocesses the generated formula.
-3. Uses a neural policy to produce variable-assignment probabilities.
-4. Samples a Boolean assignment and records its log probability.
-5. Computes the fraction of clauses satisfied.
-6. Updates the policy with an Adam-based policy-gradient training loop.
-7. Verifies sampled assignments clause by clause in the example solver path.
+## Quick start
+
+The supported solver has no third-party runtime dependencies.
+
+```bash
+python -m pip install -e .
+python -m satrl solve examples/satisfiable.cnf
+python -m satrl solve examples/pigeonhole_3_2.cnf --json
+```
+
+A human-readable SAT result contains a verified DIMACS-style assignment:
+
+```text
+s SAT
+v 1 -2 3 4 0
+c verified=true ...
+```
+
+Generate a reproducible instance:
+
+```bash
+satrl generate \
+  --variables 10 \
+  --clauses 40 \
+  --clause-size 3 \
+  --seed 523 \
+  --output instance.cnf
+```
+
+Use `--planted` when a known satisfying witness is useful during development.
+The witness is not written into the DIMACS output.
+
+## CLI
+
+```text
+satrl solve INPUT [--json] [--max-nodes N] [--no-preprocess]
+satrl generate --variables N --clauses M --clause-size K --seed S
+satrl benchmark [--variables N] [--clauses M] [--instances R] [--output report.json]
+```
+
+`INPUT` may be `-` to read DIMACS from standard input. A bounded search exits
+with status code `3` if it reaches the node limit and prints `s UNKNOWN`.
+Malformed input and invalid arguments exit with status code `2`.
+
+## Python API
+
+```python
+from satrl import CNFFormula, SolveStatus, solve
+
+formula = CNFFormula.from_clauses(
+    [[1, 2], [-1, 3], [-2, 3]],
+    num_variables=3,
+)
+result = solve(formula)
+
+assert result.status is SolveStatus.SAT
+assert result.verified
+print(result.assignment)
+```
+
+## Reproducible validation
+
+Run the maintained package tests:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+The randomized property suite generates many small formulas and requires DPLL
+to agree with exhaustive enumeration. It separately checks that preprocessing
+preserves satisfiability and that planted generators retain their witnesses.
+
+Run a benchmark without overwriting a checked-in claim:
+
+```bash
+mkdir -p benchmark-output
+satrl benchmark \
+  --variables 10 \
+  --clauses 40 \
+  --clause-size 3 \
+  --instances 20 \
+  --seed 523 \
+  --output benchmark-output/dpll-10v-40c.json
+```
+
+See [results methodology](docs/results-methodology.md) before interpreting
+runtime numbers. This repository does not claim that this educational DPLL
+implementation is competitive with production CDCL solvers.
 
 ## Repository map
 
-| File | Purpose |
+| Path | Purpose |
 |---|---|
-| [`model.py`](model.py) | Policy network, assignment sampling, satisfiability reward, and loss |
-| [`data_utils.py`](data_utils.py) | Random CNF generation, preprocessing, and dataset creation |
-| [`train.py`](train.py) | Policy-gradient training loop and reward/loss logging |
-| [`solver.py`](solver.py) | Wrapper that generates a formula, samples an assignment, and returns its reward |
-| [`formula_utils.py`](formula_utils.py) | Human-readable formula output and assignment interpretation |
-| [`example_run.py`](example_run.py) | End-to-end generated-data training and evaluation example |
-| [`example_solver.py`](example_solver.py) | Small clause-by-clause verification example |
+| [`satrl/formula.py`](satrl/formula.py) | Immutable CNF model, preprocessing, and evaluation |
+| [`satrl/dimacs.py`](satrl/dimacs.py) | Validated DIMACS input/output |
+| [`satrl/solver.py`](satrl/solver.py) | Exact DPLL solver and search statistics |
+| [`satrl/generator.py`](satrl/generator.py) | Seeded random and planted k-CNF generation |
+| [`satrl/baselines.py`](satrl/baselines.py) | Small-instance exhaustive oracle |
+| [`satrl/benchmarking.py`](satrl/benchmarking.py) | Per-instance benchmark records and reports |
+| [`satrl/cli.py`](satrl/cli.py) | `solve`, `generate`, and `benchmark` commands |
+| [`tests`](tests) | Unit, CLI, and randomized correctness tests |
+| [`examples`](examples) | Small documented DIMACS instances |
+| [`docs/architecture.md`](docs/architecture.md) | Data flow and solver design |
+| Root prototype files | Byte-for-byte historical paths retained for compatibility |
+| [`legacy/original`](legacy/original) | Unmodified historical PyTorch prototype |
+| [`benchmark`](benchmark) | Preserved audit of the historical policy |
 
-The checked-in training example uses 10 variables, 50 clauses, three literals per clause, and 100 randomly generated formulas, then evaluates one newly generated formula.
+## Historical policy audit
 
-## What the score means
+The historical benchmark remains intentionally separate from the exact solver.
+It reproduces two blocking issues in the old prototype: CNF preprocessing could
+flatten formulas, and the policy used a constant input rather than the formula.
+Its formula-agnostic policy showed no reliable held-out advantage over uniform
+random search under the recorded protocol.
 
-The reported reward is the fraction of clauses satisfied by one sampled assignment:
+Those negative results are evidence about the preserved prototype only. They
+are not presented as a comparison between DPLL and a learned solver.
 
-```text
-reward = satisfied clauses / total clauses
-```
+## Scope and limitations
 
-A score of `1.0` means that the sampled assignment satisfied every clause in that formula. A lower score does not establish unsatisfiability; another assignment may perform better.
-
-## Reproducible audit and benchmark
-
-The [`benchmark`](benchmark) directory audits the checked-in implementation and evaluates its observable formula-agnostic policy against equal-budget uniform random search and exact enumeration on small random 3-CNF formulas.
-
-The audit reproduces two blocking issues: preprocessing flattens ordinary two-dimensional formulas, and the model passes a constant all-ones vector to its policy instead of encoding the input clauses. Across five independently generated datasets and three run seeds per dataset, the reconstructed policy showed no reliable advantage over random search at a 64-candidate budget; all paired 95% confidence intervals included zero.
-
-See the [benchmark report](benchmark/BENCHMARK_REPORT.md) for the full protocol, negative result, limitations, and smallest defensible redesign.
-
-## Current limitations
-
-- The method optimizes a stochastic satisfaction ratio. It does not implement the completeness guarantees of a conventional SAT solver.
-- Both the original experiment and the added benchmark use randomly generated formulas; no standard SAT benchmark suite is included.
-- The benchmark compares uniform random search and exact enumeration on small instances, but does not yet include local search, DPLL/CDCL, or industrial formulas.
-- The original model path does not contain a trained checkpoint or a fixed benchmark corpus.
-- The original example evaluates a single generated test formula; the added benchmark supplies separated, fingerprinted synthetic splits instead.
-- [`example_solver.py`](example_solver.py) imports `SAT_solver`, while the checked-in model implementation is named [`model.py`](model.py). That import must be reconciled before the verification example is reproducible as checked in.
-
-## Attribution
-
-This README intentionally describes only the implementation present in the repository. Add collaborators or institutional affiliations only with an exact public source and agreed attribution.
+- DPLL is exact but has exponential worst-case complexity.
+- The implementation is designed for clarity, reproducibility, and small to
+  medium experiments; it does not implement clause learning, watched literals,
+  restarts, or industrial preprocessing.
+- Exhaustive enumeration is restricted to small formulas and is used only as a
+  correctness oracle.
+- Generated random k-CNF instances do not represent industrial SAT workloads.
+- No formula-conditioned learned model is included. The requirements for one
+  are described in the [architecture document](docs/architecture.md).
 
 ## License
 
-The repository includes an [MIT License](LICENSE).
+MIT. See [`LICENSE`](LICENSE).

@@ -1,6 +1,6 @@
 {
-  "upstream_commit": "2183c2d7cfc46c70a3d4efa55d28588c4668a358",
-  "torch_available": false,
+  "audit_source": "legacy/original",
+  "audit_source_sha256": "8118101b3be6998cbf69086809273d6af739f41e9b396ebd23c98528535e007e",
   "policy_input_expression": "torch.ones(self.num_variables)",
   "policy_uses_clauses": false,
   "policy_uses_constant_ones": true,

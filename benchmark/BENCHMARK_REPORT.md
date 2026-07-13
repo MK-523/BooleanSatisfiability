@@ -5,8 +5,8 @@ commands before treating any table or conclusion as final.
 
 ## Executive finding
 
-The upstream repository is not currently a valid evaluation of a learned SAT
-solver. Two independent implementation issues block that claim:
+The preserved prototype in `legacy/original` is not a valid evaluation of a
+learned SAT solver. Two independent implementation issues block that claim:
 
 1. `preprocess_data` creates a `(clauses, clause_size)` Boolean mask and uses it
    directly to index a 2-D tensor. For ordinary non-tautological input, this

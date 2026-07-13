@@ -3,9 +3,9 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
-import subprocess
 from pathlib import Path
 
 import numpy as np
@@ -13,6 +13,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parent
 REPO_ROOT = ROOT.parent
+LEGACY_ROOT = REPO_ROOT / "legacy" / "original"
 
 
 def reproduce_preprocess_shape() -> dict:
@@ -28,20 +29,15 @@ def reproduce_preprocess_shape() -> dict:
     }
 
 
-def git_commit() -> str:
-    try:
-        return subprocess.check_output(
-            ["git", "-C", str(REPO_ROOT), "rev-parse", "HEAD"], text=True
-        ).strip()
-    except (FileNotFoundError, subprocess.CalledProcessError):
-        return "unavailable"
-
-
 def main() -> None:
-    model_text = (REPO_ROOT / "model.py").read_text(encoding="utf-8")
-    data_text = (REPO_ROOT / "data_utils.py").read_text(encoding="utf-8")
+    model_text = (LEGACY_ROOT / "model.py").read_text(encoding="utf-8")
+    data_text = (LEGACY_ROOT / "data_utils.py").read_text(encoding="utf-8")
+    source_digest = hashlib.sha256(
+        model_text.encode("utf-8") + b"\0" + data_text.encode("utf-8")
+    ).hexdigest()
     report = {
-        "upstream_commit": git_commit(),
+        "audit_source": "legacy/original",
+        "audit_source_sha256": source_digest,
         "policy_input_expression": "torch.ones(self.num_variables)",
         "policy_uses_clauses": bool(re.search(r"self\.policy\(\s*clauses", model_text)),
         "policy_uses_constant_ones": "self.policy(torch.ones(self.num_variables))" in model_text,

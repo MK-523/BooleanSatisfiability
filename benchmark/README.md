@@ -1,12 +1,13 @@
 # SAT Policy Audit and Benchmark
 
-This directory contains a reproducible audit and evaluation of the policy-gradient experiment in the repository root.
+This directory contains a reproducible audit and evaluation of the preserved
+policy-gradient experiment in [`legacy/original`](../legacy/original).
 
 The result is deliberately negative: the checked-in policy does not condition on the input CNF formula, and the preprocessing path flattens ordinary two-dimensional formulas. Under an equal 64-candidate budget, a behavior-level reconstruction of that formula-agnostic policy showed no reliable held-out advantage over uniform random search.
 
 ## What is included
 
-- `audit_upstream.py`: reproduces the preprocessing shape issue and verifies that the public model uses a constant all-ones input instead of the formula.
+- `audit_upstream.py`: reproduces the preprocessing shape issue and verifies that the preserved model uses a constant all-ones input instead of the formula.
 - `benchmark.py`: generates deterministic train/test splits, trains a formula-agnostic Bernoulli policy, evaluates equal-budget random search, and computes exact optima for small formulas.
 - `analyze_results.py`: calculates paired policy-minus-random differences and 95% confidence intervals.
 - `tests/`: correctness and split-isolation tests.
@@ -42,4 +43,3 @@ Metrics include satisfaction ratio, solved rate, exact-optimal rate, regret to e
 At 64 candidates per formula, every paired 95% confidence interval for policy-minus-random satisfaction ratio and solved rate includes zero. The current policy class therefore does not demonstrate formula-specific learning.
 
 See [`BENCHMARK_REPORT.md`](BENCHMARK_REPORT.md) for the complete result and methodological limitations.
-
